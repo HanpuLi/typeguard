@@ -98,3 +98,17 @@ def test_debug_instrumentation(monkeypatch, capsys):
     path_str = str(dummy_module_path)
     assert f"Source code of {path_str!r} after instrumentation:" in err
     assert "class DummyClass" in err
+
+
+def test_class_local_annotation():
+    """Regression test for #402."""
+    dummymodule = import_dummymodule()
+    try:
+        cls = dummymodule.ClassWithNestedEnum
+        instance = cls()
+        assert instance.value is cls.NestedEnum.value
+        pytest.raises(TypeCheckError, cls, object()).match(
+            r'argument "value" \(object\) is not an instance of dummymodule.ClassWithNestedEnum.NestedEnum'
+        )
+    finally:
+        del sys.modules["dummymodule"]

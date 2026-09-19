@@ -127,6 +127,7 @@ class TransformMemo:
     send_annotation: expr | None = None
     is_async: bool = False
     local_names: set[str] = field(init=False, default_factory=set)
+    nested_class_names: set[str] = field(init=False, default_factory=set)
     imported_names: dict[str, str] = field(init=False, default_factory=dict)
     ignored_names: set[str] = field(init=False, default_factory=set)
     load_names: defaultdict[str, dict[str, Name]] = field(
@@ -460,6 +461,17 @@ class AnnotationTransformer(NodeTransformer):
         if self._memo.is_ignored_name(node):
             return None
 
+        # Method bodies do not inherit their containing class's local namespace.
+        # Resolve annotations that refer to nested classes through the implicit
+        # __class__ closure instead.
+        if (
+            isinstance(self._memo.node, (FunctionDef, AsyncFunctionDef))
+            and self._memo.parent is not None
+            and isinstance(self._memo.parent.node, ClassDef)
+            and node.id in self._memo.parent.nested_class_names
+        ):
+            return Attribute(Name("__class__", ctx=Load()), node.id, ctx=Load())
+
         return node
 
     def visit_Call(self, node: Call) -> Any:
@@ -628,6 +640,7 @@ class TypeguardTransformer(NodeTransformer):
 
     def visit_ClassDef(self, node: ClassDef) -> ClassDef | None:
         self._memo.local_names.add(node.name)
+        self._memo.nested_class_names.add(node.name)
 
         # Eliminate top level classes not belonging to the target path
         if (
