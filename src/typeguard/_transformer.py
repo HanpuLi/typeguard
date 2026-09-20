@@ -651,6 +651,12 @@ class TypeguardTransformer(NodeTransformer):
             return None
 
         with self._use_memo(node):
+            # Collect direct nested classes before visiting the class body so forward
+            # references to classes declared later in the body can be resolved too.
+            self._memo.nested_class_names.update(
+                child.name for child in node.body if isinstance(child, ClassDef)
+            )
+
             for decorator in node.decorator_list.copy():
                 if self._memo.name_matches(decorator, "typeguard.typechecked"):
                     # Remove the decorator to prevent duplicate instrumentation

@@ -378,3 +378,11 @@ class ClassWithNestedEnum:
 
     def __init__(self, value: NestedEnum = NestedEnum.value) -> None:
         self.value = value
+
+
+class ClassWithLateNestedEnum:
+    def __init__(self, value: "NestedEnum") -> None:
+        self.value = value
+
+    class NestedEnum(Enum):
+        value = 1

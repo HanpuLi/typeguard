@@ -110,5 +110,12 @@ def test_class_local_annotation():
         pytest.raises(TypeCheckError, cls, object()).match(
             r'argument "value" \(object\) is not an instance of dummymodule.ClassWithNestedEnum.NestedEnum'
         )
+
+        late_cls = dummymodule.ClassWithLateNestedEnum
+        late_instance = late_cls(late_cls.NestedEnum.value)
+        assert late_instance.value is late_cls.NestedEnum.value
+        pytest.raises(TypeCheckError, late_cls, object()).match(
+            r'argument "value" \(object\) is not an instance of dummymodule.ClassWithLateNestedEnum.NestedEnum'
+        )
     finally:
         del sys.modules["dummymodule"]
